@@ -1,4 +1,7 @@
-﻿var background = (function(){
+﻿// Service Worker用：store.jsを読み込む
+importScripts('../settings/store.js');
+
+var background = (function(){
 	"use strict";
 	var log = function(str){
 		//console.log(str);
@@ -34,45 +37,6 @@
 	var initialized = false;
 	var initWaiters = [];
 
-	var importFromLocalStorage = function(name){
-		var pat = localStorage.getItem("store.settings." + name);
-		if( pat != undefined ){
-			pat = JSON.parse(pat);
-			settings.set(name, pat);
-			localStorage.removeItem("store.settings." + name);
-		}
-	};
-	
-	var importOldSettings = function(){
-		
-		var showUpdatedPage = false;
-		
-		var prevVersion = localStorage.getItem("__version");
-		if( ! prevVersion || parseFloat(prevVersion) <= 2.4 ){
-			//update chrome.storage.sync from localStorage
-			importFromLocalStorage("highlightPages");
-			importFromLocalStorage("ignoreDomains");
-			importFromLocalStorage("ignorePages");
-			importFromLocalStorage("keepHeadingMBSpace");
-			importFromLocalStorage("replaceSymOptions");
-			importFromLocalStorage("replace_alpha");
-			importFromLocalStorage("replace_num");
-			importFromLocalStorage("replace_space");
-			importFromLocalStorage("replace_sym");
-			importFromLocalStorage("supportAjax");
-			importFromLocalStorage("supportHttps");
-			
-			localStorage.removeItem("store.settings.patternTable");
-			
-			localStorage.setItem("__version", 2.5);
-			if(parseFloat(prevVersion) < 2.4){
-				showUpdatedPage = true;
-			}
-		}
-		
-		return showUpdatedPage;
-	};
-	
 	var arrayContains = function(arr, val){
 		if( arr === undefined )return false;
 		for(var i = 0; i < arr.length; ++i){
@@ -192,18 +156,6 @@
 		return pat;
 	};
 
-	var getManifest = function(cb){
-		var xhr = new XMLHttpRequest();
-		xhr.open('GET', "manifest.json");
-		xhr.onreadystatechange = function() {
-			if( xhr.readyState == 4 ){
-				var json = JSON.parse(xhr.responseText);
-				cb(json);
-			}
-		};
-		xhr.send();
-	};
-	
 	var setIconStatus = function(tabid){
 		var enabled = true;
 		var visible = false;
@@ -236,22 +188,18 @@
 				visible = false;
 			}
 	
-			chrome.pageAction.setIcon({
+			chrome.action.setIcon({
 				"tabId":tabid,
-				"path":enabled ? "res/icon_19_red.png" : "res/icon_19_gray.png"
+				"path": enabled ?
+					chrome.runtime.getURL("res/icon_19_red.png") :
+					chrome.runtime.getURL("res/icon_19_gray.png")
 			});
-			chrome.pageAction.setTitle({
+			chrome.action.setTitle({
 				"tabId":tabid,
 				"title":tabStatus[tabid].status
 			});
-			if( visible ){
-				chrome.pageAction.show(tabid);
-			}else{
-				chrome.pageAction.hide(tabid);
-			}
 			log("setIconStatus tab:" + tabid +" visible:" + visible + " enable:" + enabled);
 		}else{
-			chrome.pageAction.hide(tabid);
 			log("setIconStatus tab:" + tabid +" visible: false (undefined tabStatus)");
 		}
 		
@@ -350,11 +298,99 @@
 			}
 			setIconStatus(sender.tab.id);
 		}
+		else if( request.cmd === "getTabStatus" ){
+			res.tabStatus = tabStatus[request.tabId] || null;
+		}
+		else if( request.cmd === "urlMatcher" ){
+			res.match = urlMatcher(request.url);
+		}
+		else if( request.cmd === "addIgnorePage" ){
+			var ignorePages = settings.get("ignorePages");
+			if( !arrayContains(ignorePages, request.page) ){
+				ignorePages.push(request.page);
+				settings.set("ignorePages", ignorePages);
+			}
+			res.success = true;
+		}
+		else if( request.cmd === "removeIgnorePage" ){
+			var ignorePages = settings.get("ignorePages");
+			for(var i = 0; i < ignorePages.length; ++i){
+				if( request.page == ignorePages[i] ){
+					ignorePages.splice(i,1);
+					settings.set("ignorePages", ignorePages);
+					break;
+				}
+			}
+			res.success = true;
+		}
+		else if( request.cmd === "addIgnoreDomain" ){
+			var ignoreDomains = settings.get("ignoreDomains");
+			if( !arrayContains(ignoreDomains, request.domain) ){
+				ignoreDomains.push(request.domain);
+				settings.set("ignoreDomains", ignoreDomains);
+			}
+			res.success = true;
+		}
+		else if( request.cmd === "removeIgnoreDomain" ){
+			var ignoreDomains = settings.get("ignoreDomains");
+			for(var i = 0; i < ignoreDomains.length; ++i){
+				if( request.domain.indexOf(ignoreDomains[i]) == 0 ){
+					ignoreDomains.splice(i,1);
+					settings.set("ignoreDomains", ignoreDomains);
+					break;
+				}
+			}
+			res.success = true;
+		}
+		else if( request.cmd === "setHighlight" ){
+			var highlight = settings.get("highlightPages");
+			if( request.enable && !arrayContains(highlight, request.page) ){
+				highlight.push(request.page);
+			}else if( !request.enable ){
+				for( var i = 0; i < highlight.length; ++i){
+					if( highlight[i] === request.page ){
+						highlight.splice(i,1);
+						break;
+					}
+				}
+			}
+			settings.set("highlightPages", highlight);
+			res.success = true;
+		}
+		else if( request.cmd === "showOptionPage" ){
+			showOptionPage();
+			res.success = true;
+		}
+		else if( request.cmd === "waitForInit" ){
+			if( initialized ){
+				res.initialized = true;
+				sendResponse(res);
+			}else{
+				initWaiters.push(function(){
+					sendResponse({initialized: true});
+				});
+				return true; // 非同期レスポンス
+			}
+		}
+		else if( request.cmd === "getSettings" ){
+			res.settings = settings.toObject();
+		}
+		else if( request.cmd === "getSyms" ){
+			res.syms = patternTable.syms.chars;
+		}
+		else if( request.cmd === "updateSettings" ){
+			updateCustomSymPattern(request.symValues);
+			res.success = true;
+		}
+		else if( request.cmd === "setSetting" ){
+			settings.set(request.key, request.value);
+			res.success = true;
+		}
 		sendResponse(res);
 	};
 	
 	var showOptionPage = function(){
-		chrome.tabs.query({url:chrome.extension.getURL("settings/index.html")},function(tabs){
+		chrome.tabs.query({url:chrome.runtime.getURL("settings/index.html")},function(tabs){
 			if( tabs && tabs.length > 0 ){
 				if( tabs.length > 1 ){
 					log("showOptionPage:found 2 or more option page tabs. close them.");
@@ -434,21 +470,16 @@
 		init : function(){
 			createTranslateTable();
 			settings = new Store("settings", defaultOptions, function(){
-				var updated = importOldSettings();
 				updateCustomSymPattern();
 				
 				chrome.tabs.onUpdated.addListener(onTabUpdated);
 				chrome.tabs.onRemoved.addListener(onTabClosed);
-				chrome.extension.onRequest.addListener(onRequest);
+				chrome.runtime.onMessage.addListener(onRequest);
 				initialized = true;
 				for( var i = 0; i < initWaiters.length;++i){
 					(initWaiters[i])();
 				}
 				initWaiters = [];
-				if( updated ){
-					//chrome.tabs.create({url: "settings/index.html"});
-					showOptionPage();
-				}
 				log("init finished");
 			});
 		},

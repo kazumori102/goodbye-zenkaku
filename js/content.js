@@ -5,7 +5,7 @@ function log(str){
 var translate = function(matcher, target, keepHeadingMBSpace){
 	var replaced = 0;
 	var diff = 'Ａ'.charCodeAt(0) - 'A'.charCodeAt(0);
-	$(target).find("*:not(iframe,textarea,script)").andSelf().contents().filter(function(){return this.nodeType==Node.TEXT_NODE;}).each(function(){
+	$(target).find("*:not(iframe,textarea,script)").addBack().contents().filter(function(){return this.nodeType==Node.TEXT_NODE;}).each(function(){
 		var str = this.textContent;
 		var prependSpace = false;
 		if( keepHeadingMBSpace ){
@@ -31,7 +31,7 @@ var translate = function(matcher, target, keepHeadingMBSpace){
 };
 var highlight = function(matcher, target, keepHeadingMBSpace){
 	var replaced = 0;
-	$(target).find("*:not(iframe,textarea,script,span._z2h_highlight)").andSelf().contents().filter(function(){return this.nodeType==Node.TEXT_NODE;}).each(function(){
+	$(target).find("*:not(iframe,textarea,script,span._z2h_highlight)").addBack().contents().filter(function(){return this.nodeType==Node.TEXT_NODE;}).each(function(){
 		var arr = {};
 		var _this = this;
 
@@ -56,7 +56,7 @@ var highlight = function(matcher, target, keepHeadingMBSpace){
 	});
 	return replaced;
 };
-chrome.extension.sendRequest({"cmd":"loaded", "url":location.href, "iframe":(self!==top)}, function(res){
+chrome.runtime.sendMessage({"cmd":"loaded", "url":location.href, "iframe":(self!==top)}, function(res){
 	if (res.siteStatus == "DISABLE" ){
 		log("disabled");
 		return;
@@ -88,26 +88,26 @@ chrome.extension.sendRequest({"cmd":"loaded", "url":location.href, "iframe":(sel
 		
 		if(res.supportAjax){
 			var rerunTimer = -1;
-			var updater = function(e) {
+			var observer = new MutationObserver(function(mutations) {
 			    if( rerunTimer >= 0 ){
 			    	clearTimeout(rerunTimer);
 			    }
 			    rerunTimer = setTimeout(function(){
 					rerunTimer = -1;
-			    	log("fireing timer");
-			    	$("body").unbind("DOMSubtreeModified", updater);
+			    	log("firing timer");
+			    	observer.disconnect();
 					var replaced = transFunc(matcher, document.body, keepHeadingMBSpace);
-			    	$("body").bind("DOMSubtreeModified", updater);
+			    	observer.observe(document.body, {childList: true, subtree: true});
 
 			    	log("request update in "+ (self!==top?"iframe":"top frame") + " by timer. replaced :"+replaced);
-					chrome.extension.sendRequest({"cmd":"update","replaced":replaced,"iframe":(self!==top), append:true}, function(res){} );
+					chrome.runtime.sendMessage({"cmd":"update","replaced":replaced,"iframe":(self!==top), append:true}, function(res){} );
 			    },1000);
-			};
-			$("body").bind("DOMSubtreeModified", updater);
+			});
+			observer.observe(document.body, {childList: true, subtree: true});
 		}
 
 		log("request update in "+ (self!==top?"iframe":"top frame") + ". replaced :"+replaced);
-		chrome.extension.sendRequest({"cmd":"update","replaced":replaced,"iframe":(self!==top)}, function(res){} );
+		chrome.runtime.sendMessage({"cmd":"update","replaced":replaced,"iframe":(self!==top)}, function(res){} );
 	}
 });
 
