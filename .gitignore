@@ -1,0 +1,40 @@
+# Chrome拡張 - セキュリティ上重要（秘密鍵を保護）
+*.pem
+*.crx
+*.zip
+
+# Chrome拡張 - デバッグ・一時ファイル
+_metadata/
+_debug/
+dist/
+
+# OS固有ファイル
+*.DS_Store
+.DS_Store
+Thumbs.db
+*~
+
+# エディタ・IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node.js（将来的にビルドツール導入時用）
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# 開発ツール
+.claude/
+.serena/
+
+# ビルド成果物
+build/
+dist/
+*.log
