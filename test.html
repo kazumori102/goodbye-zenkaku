@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全角英数字変換テストページ - さよなら全角英数</title>
+    <style>
+        body {
+            font-family: 'メイリオ', 'Meiryo', sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #d32f2f;
+            border-bottom: 3px solid #d32f2f;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-row {
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #ccc;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        .hankaku {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        .zenkaku {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .label {
+            display: inline-block;
+            width: 80px;
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>全角英数字変換テストページ</h1>
+    <p>このページは「さよなら全角英数」拡張機能の動作確認用です。<br>
+    オレンジ色の行の全角文字が半角に変換されているか確認してください。</p>
+
+    <div class="test-section">
+        <h2>アルファベット大文字</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ</div>
+    </div>
+
+    <div class="test-section">
+        <h2>アルファベット小文字</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> abcdefghijklmnopqrstuvwxyz</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ</div>
+    </div>
+
+    <div class="test-section">
+        <h2>数字</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> 0123456789</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> ０１２３４５６７８９</div>
+    </div>
+
+    <div class="test-section">
+        <h2>記号</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> ！＂＃＄％＆＇（）＊＋，－．／：；＜＝＞？＠［＼］＾＿｀｛｜｝～</div>
+    </div>
+
+    <div class="test-section">
+        <h2>スペース</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> Hello World Test</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> Hello　World　Test</div>
+    </div>
+
+    <div class="test-section">
+        <h2>混在テキスト</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> Version 2.0.0 released on 2024/10/14</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> Version　２．０．０　released　on　２０２４／１０／１４</div>
+        <div class="test-row hankaku"><span class="label">[半角]</span> TEL: 03-1234-5678 Email: test@example.com</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> TEL：　０３－１２３４－５６７８　Email：　test＠example．com</div>
+    </div>
+
+    <div class="test-section">
+        <h2>実用例</h2>
+        <div class="test-row hankaku"><span class="label">[半角]</span> 2024年10月14日、新製品を発売しました。価格は1,980円(税込)です。</div>
+        <div class="test-row zenkaku"><span class="label">[全角]</span> ２０２４年１０月１４日、新製品を発売しました。価格は１，９８０円（税込）です。</div>
+    </div>
+
+    <div class="test-section" style="background: #fffde7; border: 2px solid #fbc02d;">
+        <h2>確認ポイント</h2>
+        <ul>
+            <li>拡張機能が有効な場合、オレンジ色の行が青色の行と同じ見た目になるはずです</li>
+            <li>拡張機能を無効にすると、オレンジ色の行は全角のままです</li>
+            <li>ポップアップメニューから「このページでの半角変換を無効にする」を選択すると変換が停止します</li>
+            <li>記号の変換は設定画面で個別に有効/無効を切り替えられます</li>
+        </ul>
+    </div>
+</body>
+</html>
